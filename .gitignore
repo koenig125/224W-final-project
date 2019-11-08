@@ -114,3 +114,6 @@ venv.bak/
 
 # dataset
 data/*
+
+# vscode
+*.vscode
