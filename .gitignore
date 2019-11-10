@@ -112,8 +112,5 @@ venv.bak/
 # jetbrains IDE files
 .idea/
 
-# dataset
-data/*
-
 # vscode
 *.vscode
