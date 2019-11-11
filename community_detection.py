@@ -1,6 +1,8 @@
 """
 Runs Louvain community detection algorithm on the Leeds Butterfly dataset
-and provides species distribution analysis for detected communities.
+and provides species distribution analysis for detected communities. Also
+provides classification accuracy based on majority-label predictions from
+the communities identified by Louvain.
 """
 
 import networkx as nx
@@ -65,9 +67,9 @@ def partition(graph):
     return communities
 
 
-def community_info(graph, communities):
+def report_species_distribution(graph, communities):
     """
-    Provide basic information about communities provided.
+    Print the species distribution of nodes in the communities provided.
 
     :param - graph: nx.Graph object representing butterfly similarity network
     :param - communities: dictionary mapping communities to nodes in those communities
@@ -88,36 +90,72 @@ def species_distribution(graph, nodes):
     """
     template = "{0:25} {1:5} {2:5}" 
     print(template.format("SPECIES", "COUNT", "PERCENT"))
-    species = get_species(graph, nodes)
-    for s, node_ids in species.items():
+    labels = get_labels(graph, nodes)
+    for l, node_ids in labels.items():
         count = len(node_ids)
         percent = count / len(nodes)
-        print(template.format(s, count, '{0:.3f}'.format(percent)))
+        species = labels_to_species[l]
+        print(template.format(species, count, '{0:.3f}'.format(percent)))
 
 
-def get_species(graph, nodes):
+def get_labels(graph, nodes):
     """
-    Get the species of each node and group nodes by species.
+    Get the labels of each node and group nodes by labels.
 
     :param - graph: nx.Graph object representing butterfly similarity network
     :param - nodes: list of node ids from graph
-    return: dictionary mapping species to nodes
+    return: dictionary mapping labels to nodes
     """
-    species = {}
+    labels = {}
     for node in nodes:
         l = graph.nodes[node]['label']
-        s = labels_to_species[l]
-        if s in species:
-            species[s].append(node)
+        if l in labels:
+            labels[l].append(node)
         else:
-            species[s] = [node]
-    return species
+            labels[l] = [node]
+    return labels
+
+
+def predict(graph, communities):
+    """
+    Make predictions using the majority class in each community as the predicted 
+    label for every node in that community.
+
+    :param - graph: nx.Graph object representing butterfly similarity network
+    :param - communities: dictionary mapping communities to nodes in those communities
+    """
+    preds = {}
+    for _, nodes in communities.items():
+        labels = get_labels(graph, nodes)
+        counts = [(l, len(nids)) for l, nids in labels.items()]
+        counts.sort(key=lambda x: x[1], reverse=True)
+        majority_label = counts[0][0]
+        for n in nodes:
+            preds[n] = majority_label
+    return preds
+
+
+def report_classification_accuracy(preds, labels):
+    """
+    Calculate the classification accuracy given predictions and labels.
+
+    :param - preds: dictionary mapping node ids to predicted labels
+    :param - labels: dictionary mapping node ids to ground-truth labels
+    """
+    all_nodes = labels.keys()
+    correct = [preds[n] == labels[n] for n in all_nodes]
+    accuracy = sum(correct) / len(all_nodes)
+    print('Majority Label Classification Accuracy: {0:.5f}'.format(accuracy))
 
 
 def main():
     graph = load_graph()
     communities = partition(graph)
-    community_info(graph, communities)
+    report_species_distribution(graph, communities)
+
+    predictions = predict(graph, communities)
+    ground_truth = {n: graph.nodes[n]['label'] for n in list(graph.nodes)}
+    report_classification_accuracy(predictions, ground_truth)
 
 
 if __name__=='__main__':
