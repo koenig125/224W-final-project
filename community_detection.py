@@ -12,6 +12,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import sklearn.metrics as metrics
 from community import best_partition as louvain
+from matplotlib import cm
 
 # Species names for the Leeds Butterfly Dataset.
 # Additional information about this dataset here:
@@ -55,7 +56,41 @@ def load_graph():
     return G
 
 
+def plot_communities(graph, pos, communities, labels=False, cmap=cm.get_cmap('jet'), title=None, path=None):
+    """
+    Plot nodes in graph with coloring based on node assignments to communities.
+
+    :param - graph: nx.Graph object representing butterfly similarity network
+    :param - communities: dictionary mapping communities to nodes in those communities
+    :param - labels: boolean indicating whether or not species labels should be applied
+    :param - cmap: matplotlib colormap for mapping node classes to colors
+    :param - title: title for the plot
+    :param - path: save path for plot
+    """
+    plt.close('all')
+    _ = plt.figure(figsize=(10, 7))
+    for i, (c, nodes) in enumerate(communities.items()):
+        c_index = int((i + 1) / len(communities) * 255)
+        color = cmap(c_index)[:3] # 3 values for rgb
+        label = labels_to_species[c] if labels else None
+        nx.draw_networkx_nodes(graph, pos, nodes, node_size=30, label=label,
+                                node_color=[color] * len(nodes), cmap=cmap)
+    nx.draw_networkx_edges(graph, pos, alpha=0.05)
+    if labels: plt.legend()
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(path)
+
+
 def get_edge_distribution(graph):
+    """
+    Calculate the distribution of edge weights between nodes of different classes.
+
+    :param - graph: nx.Graph object representing butterfly similarity network
+    return: Row-normalized 2D numpy array for which each row and column represents 
+    a species. Entry (i, j) is the percentage of the total edge weight for nodes  
+    from species i that derives from edges to nodes from species j.
+    """
     num_classes = len(labels_to_species)
     edge_weights = np.zeros((num_classes, num_classes))
     for n in graph.nodes:
@@ -164,7 +199,7 @@ def report_classification_results(predictions, labels):
     accuracy = metrics.accuracy_score(labels, predictions)
     print('Majority Label Classification Accuracy: {0:.5f}'.format(accuracy))
     cm = metrics.confusion_matrix(labels, predictions)
-    plot_heatmap(cm, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'confusion_matrix.png', 'Predicted label', 'True label')
+    plot_heatmap(cm, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'images/confusion_matrix.png', 'Predicted label', 'True label')
 
 
 def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
@@ -173,6 +208,7 @@ def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
 
     :param - cm: confusion matrix, as returned by sklearn.metrics.confusion_matrix
     """
+    plt.close('all')
     species = list(labels_to_species.values())
     df_cm = pd.DataFrame(matrix, species, species)
     _ = plt.figure(figsize=(10, 7))
@@ -188,12 +224,16 @@ def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
 
 def main():
     graph = load_graph()
-
+    position = nx.spring_layout(graph)
+    
     edge_distribution = get_edge_distribution(graph)
-    plot_heatmap(edge_distribution, 'Row-Normalized Inter-Species Edge Weight Distribution Post Network Enhancement', 'edge_dist.png')
+    plot_heatmap(edge_distribution, 'Row-Normalized Inter-Species Edge Weight Distribution Post Network Enhancement', 'images/edge_distribution.png')
+
+    true_communities = get_labels(graph, list(graph.nodes))
+    plot_communities(graph, position, true_communities, labels=True, title='Butterfly Similarity Network - True Communities', path='images/true_communities.png')
 
     communities = partition(graph)
-    report_species_distribution(graph, communities)
+    plot_communities(graph, position, communities, labels=False, title='Butterfly Similarity Network - Louvain Communities', path='images/louvain_communities.png')
 
     graph_nodes = sorted(list(graph.nodes))
     predictions = predict(graph, communities)
