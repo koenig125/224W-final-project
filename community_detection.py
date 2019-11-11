@@ -1,11 +1,15 @@
 """
 Runs Louvain community detection algorithm on the Leeds Butterfly dataset
 and provides species distribution analysis for detected communities. Also
-provides classification accuracy based on majority-label predictions from
+provides classification results based on majority-label predictions from
 the communities identified by Louvain.
 """
 
+import pandas as pd
+import seaborn as sns
 import networkx as nx
+import matplotlib.pyplot as plt
+import sklearn.metrics as metrics
 from community import best_partition as louvain
 
 # Species names for the Leeds Butterfly Dataset.
@@ -135,17 +139,36 @@ def predict(graph, communities):
     return preds
 
 
-def report_classification_accuracy(preds, labels):
+def report_classification_results(predictions, labels):
     """
-    Calculate the classification accuracy given predictions and labels.
+    Calculate classification accuracy and confusion matrix given predictions and labels.
 
-    :param - preds: dictionary mapping node ids to predicted labels
-    :param - labels: dictionary mapping node ids to ground-truth labels
+    :param - predictions: list for which index i holds the prediction for node i
+    :param - labels: list for which index i holds ground truth label for node i
     """
-    all_nodes = labels.keys()
-    correct = [preds[n] == labels[n] for n in all_nodes]
-    accuracy = sum(correct) / len(all_nodes)
+    accuracy = metrics.accuracy_score(labels, predictions)
     print('Majority Label Classification Accuracy: {0:.5f}'.format(accuracy))
+    cm = metrics.confusion_matrix(labels, predictions)
+    plot_confusion_matrix(cm, title='Majority Label Predictions from Louvain Communities')
+
+
+def plot_confusion_matrix(cm, title):
+    """
+    Plots the provided confusion matrix.
+
+    :param - cm: confusion matrix, as returned by sklearn.metrics.confusion_matrix
+    """
+    species = list(labels_to_species.values())
+    df_cm = pd.DataFrame(cm, species, species)
+    _ = plt.figure(figsize=(10, 7))
+    heatmap = sns.heatmap(df_cm, annot=True, fmt="d", cmap=sns.cm.rocket_r)
+    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), rotation=0, ha='right', fontsize=10)
+    heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(), rotation=45, ha='right', fontsize=10)
+    plt.title('Confusion Matrix - ' + title)
+    plt.xlabel('Predicted label')
+    plt.ylabel('True label')
+    plt.tight_layout()
+    plt.savefig('confusion_matrix.png')
 
 
 def main():
@@ -153,9 +176,11 @@ def main():
     communities = partition(graph)
     report_species_distribution(graph, communities)
 
+    graph_nodes = sorted(list(graph.nodes))
     predictions = predict(graph, communities)
-    ground_truth = {n: graph.nodes[n]['label'] for n in list(graph.nodes)}
-    report_classification_accuracy(predictions, ground_truth)
+    preds = [predictions[n] for n in graph_nodes]
+    labels = [graph.nodes[n]['label'] for n in graph_nodes]
+    report_classification_results(preds, labels)
 
 
 if __name__=='__main__':
