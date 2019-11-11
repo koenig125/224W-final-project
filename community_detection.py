@@ -5,6 +5,7 @@ provides classification results based on majority-label predictions from
 the communities identified by Louvain.
 """
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import networkx as nx
@@ -52,6 +53,20 @@ def load_graph():
         node_id, label = int(node_id), int(label)
         G.nodes[node_id]['label'] = label
     return G
+
+
+def get_edge_distribution(graph):
+    num_classes = len(labels_to_species)
+    edge_weights = np.zeros((num_classes, num_classes))
+    for n in graph.nodes:
+        l1 = graph.nodes[n]['label']
+        for neighbor in graph.adj[n]:
+            l2 = graph.nodes[neighbor]['label']
+            weight = graph.adj[n][neighbor]['weight']
+            edge_weights[l1 - 1][l2 - 1] += weight
+    row_sums = edge_weights.sum(axis=1)
+    normalized_distribution = edge_weights / row_sums[:, np.newaxis]
+    return normalized_distribution
 
 
 def partition(graph):
@@ -149,30 +164,34 @@ def report_classification_results(predictions, labels):
     accuracy = metrics.accuracy_score(labels, predictions)
     print('Majority Label Classification Accuracy: {0:.5f}'.format(accuracy))
     cm = metrics.confusion_matrix(labels, predictions)
-    plot_confusion_matrix(cm, title='Majority Label Predictions from Louvain Communities')
+    plot_heatmap(cm, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'confusion_matrix.png', 'Predicted label', 'True label')
 
 
-def plot_confusion_matrix(cm, title):
+def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
     """
-    Plots the provided confusion matrix.
+    Plots the provided matrix as a heatmap using seaborn graphing library.
 
     :param - cm: confusion matrix, as returned by sklearn.metrics.confusion_matrix
     """
     species = list(labels_to_species.values())
-    df_cm = pd.DataFrame(cm, species, species)
+    df_cm = pd.DataFrame(matrix, species, species)
     _ = plt.figure(figsize=(10, 7))
-    heatmap = sns.heatmap(df_cm, annot=True, fmt="d", cmap=sns.cm.rocket_r)
+    heatmap = sns.heatmap(df_cm, annot=True, cmap=sns.cm.rocket_r)
     heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), rotation=0, ha='right', fontsize=10)
     heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(), rotation=45, ha='right', fontsize=10)
-    plt.title('Confusion Matrix - ' + title)
-    plt.xlabel('Predicted label')
-    plt.ylabel('True label')
+    if xlabel: plt.xlabel(xlabel)
+    if ylabel: plt.ylabel(ylabel)
+    plt.title(title)
     plt.tight_layout()
-    plt.savefig('confusion_matrix.png')
+    plt.savefig(path)
 
 
 def main():
     graph = load_graph()
+
+    edge_distribution = get_edge_distribution(graph)
+    plot_heatmap(edge_distribution, 'Row-Normalized Inter-Species Edge Weight Distribution Post Network Enhancement', 'edge_dist.png')
+
     communities = partition(graph)
     report_species_distribution(graph, communities)
 
