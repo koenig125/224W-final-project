@@ -56,6 +56,66 @@ def load_graph():
     return G
 
 
+def get_edge_distribution(graph):
+    """
+    Calculate the distribution of edge weights between nodes of different classes.
+
+    :param - graph: nx.Graph object representing butterfly similarity network
+    return: Row-normalized 2D numpy array for which each row and column represents 
+    a species. Entry (i, j) is the percentage of the total edge weight for nodes  
+    from species i that derives from edges to nodes from species j.
+    """
+    num_classes = len(labels_to_species)
+    edge_weights = np.zeros((num_classes, num_classes))
+    for n in graph.nodes:
+        l1 = graph.nodes[n]['label']
+        for neighbor in graph.adj[n]:
+            l2 = graph.nodes[neighbor]['label']
+            weight = graph.adj[n][neighbor]['weight']
+            edge_weights[l1 - 1][l2 - 1] += weight
+    row_sums = edge_weights.sum(axis=1)
+    normalized_distribution = edge_weights / row_sums[:, np.newaxis]
+    return normalized_distribution
+
+
+def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
+    """
+    Plots the provided matrix as a heatmap using seaborn graphing library.
+
+    :param - cm: confusion matrix, as returned by sklearn.metrics.confusion_matrix
+    """
+    plt.close('all')
+    species = list(labels_to_species.values())
+    df_cm = pd.DataFrame(matrix, species, species)
+    _ = plt.figure(figsize=(10, 7))
+    heatmap = sns.heatmap(df_cm, annot=True, cmap=sns.cm.rocket_r)
+    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), rotation=0, ha='right', fontsize=10)
+    heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(), rotation=45, ha='right', fontsize=10)
+    if xlabel: plt.xlabel(xlabel)
+    if ylabel: plt.ylabel(ylabel)
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(path)
+
+
+def get_labels(graph, nodes):
+    """
+    Get the labels of each node and group nodes by labels.
+
+    :param - graph: nx.Graph object representing butterfly similarity network
+    :param - nodes: list of node ids from graph
+    return: dictionary mapping labels to nodes
+    """
+    labels = {}
+    for node in nodes:
+        l = graph.nodes[node]['label']
+        if l in labels:
+            labels[l].append(node)
+        else:
+            labels[l] = [node]
+    return labels
+
+
 def plot_communities(graph, pos, communities, labels=False, cmap=cm.get_cmap('jet'), title=None, path=None):
     """
     Plot nodes in graph with coloring based on node assignments to communities.
@@ -82,28 +142,6 @@ def plot_communities(graph, pos, communities, labels=False, cmap=cm.get_cmap('je
     plt.savefig(path)
 
 
-def get_edge_distribution(graph):
-    """
-    Calculate the distribution of edge weights between nodes of different classes.
-
-    :param - graph: nx.Graph object representing butterfly similarity network
-    return: Row-normalized 2D numpy array for which each row and column represents 
-    a species. Entry (i, j) is the percentage of the total edge weight for nodes  
-    from species i that derives from edges to nodes from species j.
-    """
-    num_classes = len(labels_to_species)
-    edge_weights = np.zeros((num_classes, num_classes))
-    for n in graph.nodes:
-        l1 = graph.nodes[n]['label']
-        for neighbor in graph.adj[n]:
-            l2 = graph.nodes[neighbor]['label']
-            weight = graph.adj[n][neighbor]['weight']
-            edge_weights[l1 - 1][l2 - 1] += weight
-    row_sums = edge_weights.sum(axis=1)
-    normalized_distribution = edge_weights / row_sums[:, np.newaxis]
-    return normalized_distribution
-
-
 def partition(graph):
     """
     Compute graph partition to maximize modularity using Louvain algorithm.
@@ -119,55 +157,6 @@ def partition(graph):
         else:
             communities[c] = [n]
     return communities
-
-
-def report_species_distribution(graph, communities):
-    """
-    Print the species distribution of nodes in the communities provided.
-
-    :param - graph: nx.Graph object representing butterfly similarity network
-    :param - communities: dictionary mapping communities to nodes in those communities
-    """
-    for community, nodes in communities.items():
-        print('COMMUNITY', community)
-        print('# NODES:', len(nodes))
-        species_distribution(graph, nodes)
-        print()
-
-
-def species_distribution(graph, nodes):
-    """
-    Print the distribution of species from nodes provided.
-
-    :param - graph: nx.Graph object representing butterfly similarity network
-    :param - nodes: list of node ids from graph
-    """
-    template = "{0:25} {1:5} {2:5}" 
-    print(template.format("SPECIES", "COUNT", "PERCENT"))
-    labels = get_labels(graph, nodes)
-    for l, node_ids in labels.items():
-        count = len(node_ids)
-        percent = count / len(nodes)
-        species = labels_to_species[l]
-        print(template.format(species, count, '{0:.3f}'.format(percent)))
-
-
-def get_labels(graph, nodes):
-    """
-    Get the labels of each node and group nodes by labels.
-
-    :param - graph: nx.Graph object representing butterfly similarity network
-    :param - nodes: list of node ids from graph
-    return: dictionary mapping labels to nodes
-    """
-    labels = {}
-    for node in nodes:
-        l = graph.nodes[node]['label']
-        if l in labels:
-            labels[l].append(node)
-        else:
-            labels[l] = [node]
-    return labels
 
 
 def predict(graph, communities):
@@ -200,26 +189,6 @@ def report_classification_results(predictions, labels):
     print('Majority Label Classification Accuracy: {0:.5f}'.format(accuracy))
     cm = metrics.confusion_matrix(labels, predictions)
     plot_heatmap(cm, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'images/confusion_matrix.png', 'Predicted label', 'True label')
-
-
-def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
-    """
-    Plots the provided matrix as a heatmap using seaborn graphing library.
-
-    :param - cm: confusion matrix, as returned by sklearn.metrics.confusion_matrix
-    """
-    plt.close('all')
-    species = list(labels_to_species.values())
-    df_cm = pd.DataFrame(matrix, species, species)
-    _ = plt.figure(figsize=(10, 7))
-    heatmap = sns.heatmap(df_cm, annot=True, cmap=sns.cm.rocket_r)
-    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), rotation=0, ha='right', fontsize=10)
-    heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(), rotation=45, ha='right', fontsize=10)
-    if xlabel: plt.xlabel(xlabel)
-    if ylabel: plt.ylabel(ylabel)
-    plt.title(title)
-    plt.tight_layout()
-    plt.savefig(path)
 
 
 def main():
