@@ -1,8 +1,11 @@
+import os
+
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import seaborn as sns
 from matplotlib import cm
+
 
 # Species names for the Leeds Butterfly Dataset.
 # Additional information about this dataset here:
@@ -46,6 +49,18 @@ def load_graph():
     return G
 
 
+def make_dir(dir_name):
+    '''
+    Creates a directory if it doesn't yet exist.
+    
+    :param - dir_name: Name of directory to be created.
+    '''
+    script_dir = os.path.dirname(__file__)
+    results_dir = os.path.join(script_dir, dir_name + '/')
+    if not os.path.isdir(results_dir):
+        os.makedirs(results_dir)
+
+
 def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
     """
     Plots the provided matrix as a heatmap.
@@ -67,6 +82,7 @@ def plot_heatmap(matrix, title, path, xlabel=None, ylabel=None):
     if ylabel: plt.ylabel(ylabel)
     plt.title(title)
     plt.tight_layout()
+    make_dir('images')
     plt.savefig(path)
 
 
@@ -103,4 +119,5 @@ def plot_communities(graph, pos, communities, labels=False, cmap=cm.get_cmap('je
     if labels: plt.legend()
     plt.title(title)
     plt.tight_layout()
+    make_dir('images')
     plt.savefig(path)
