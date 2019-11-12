@@ -1,6 +1,6 @@
 """
-Script to calculate inter-species edge weight distribution for the BIOSNAP Leeds
-Butterfly Dataset. Edge weights derived from Network Enhancement processing
+Script to calculate inter-species edge weight distribution for the BioSNAP butterfly
+similarity network. Edge weights derived from Network Enhancement processing
 (see https://snap.stanford.edu/biodata/datasets/10029/10029-SS-Butterfly.html).
 """
 
