@@ -28,8 +28,8 @@ labels_to_species = {
 # represent butterflies (organisms) and edges represent visual 
 # similarities between the organisms. Additional information here: 
 # https://snap.stanford.edu/biodata/datasets/10029/10029-SS-Butterfly.html
-edgefile = open("data/dataset/SS-Butterfly_weights.tsv", 'rb')
-nodefile = open('data/dataset/SS-Butterfly_labels.tsv', 'r')
+edgefile = open("data/SS-Butterfly_weights.tsv", 'rb')
+nodefile = open('data/SS-Butterfly_labels.tsv', 'r')
 
 
 def load_graph():
