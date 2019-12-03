@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import seaborn as sns
+import sklearn
 from matplotlib import cm
 
 
@@ -121,3 +122,69 @@ def plot_communities(graph, pos, communities, labels=False, cmap=cm.get_cmap('je
     plt.tight_layout()
     make_dir('images')
     plt.savefig(path)
+
+
+def group_communities(nodes_to_communities):
+    """
+    Groups nodes according to the communities to which they are assigned.
+
+    :param - nodes_to_communities: dictionary mapping nodes to their communities
+    return: dictionary mapping communities to nodes in those communities
+    """
+    communities = {}
+    for n, c in nodes_to_communities.items():
+        if c in communities:
+            communities[c].append(n)
+        else:
+            communities[c] = [n]
+    return communities
+
+
+def predict_majority_class(graph, communities):
+    """
+    Make predictions using the majority class in each community as the predicted 
+    label for every node in that community.
+
+    :param - graph: nx.Graph object representing butterfly similarity network
+    :param - communities: dictionary mapping communities to nodes in those communities
+    """
+    preds = {}
+    for _, nodes in communities.items():
+        labels = get_labels(graph, nodes)
+        counts = [(l, len(nids)) for l, nids in labels.items()]
+        counts.sort(key=lambda x: x[1], reverse=True)
+        majority_label = counts[0][0]
+        for n in nodes:
+            preds[n] = majority_label
+    return preds
+
+
+def get_labels(graph, nodes):
+    """
+    Get the labels of each node and group nodes by labels.
+
+    :param - graph: nx.Graph object representing butterfly similarity network
+    :param - nodes: list of node ids from graph
+    return: dictionary mapping labels to nodes
+    """
+    labels = {}
+    for node in nodes:
+        l = graph.nodes[node]['label']
+        if l in labels:
+            labels[l].append(node)
+        else:
+            labels[l] = [node]
+    return labels
+
+
+def report_classification_results(predictions, labels, cm_title, cm_path):
+    """
+    Calculate classification accuracy and confusion matrix given predictions and labels.
+
+    :param - predictions: list for which index i holds the prediction for node i
+    :param - labels: list for which index i holds ground truth label for node i
+    """
+    accuracy = sklearn.metrics.accuracy_score(labels, predictions)
+    print('Accuracy: {0:.5f}'.format(accuracy))
+    confusion_matrix = sklearn.metrics.confusion_matrix(labels, predictions)
+    plot_heatmap(confusion_matrix, cm_title, cm_path, 'Predicted Label', 'True Label')
