@@ -2,6 +2,7 @@ import os
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import sklearn
@@ -28,7 +29,7 @@ labels_to_species = {
 # represent butterflies (organisms) and edges represent visual 
 # similarities between the organisms. Additional information here: 
 # https://snap.stanford.edu/biodata/datasets/10029/10029-SS-Butterfly.html
-edgefile = open("data/SS-Butterfly_weights.tsv", 'rb')
+edgefile = open('data/SS-Butterfly_weights.tsv', 'rb')
 nodefile = open('data/SS-Butterfly_labels.tsv', 'r')
 
 
@@ -48,6 +49,37 @@ def load_graph():
         node_id, label = int(node_id), int(label)
         G.nodes[node_id]['label'] = label
     return G
+
+
+def load_embeddings(path):
+    """
+    Load node2vec embeddings.
+
+    return: dictionary mapping node ids to their embeddings.
+    """
+    embeddings = {}
+    with open(path) as fp:  
+        for i, line in enumerate(fp):
+            node_id, emb_str = line.split(" ", 1)
+            emb = np.fromstring(emb_str, sep=' ')
+            if i != 0: # skip first line of file
+                embeddings[int(node_id)] = emb
+    return embeddings
+
+
+def load_labels():
+    """
+    Load butterfly similarity network labels.
+
+    return: dictionary mapping node ids to labels (1-10)
+    """
+    labels = {}
+    for line in nodefile:
+        if line[0] == '#': continue # skip comments
+        node_id, label = line[:-1].split('\t')
+        node_id, label = int(node_id), int(label)
+        labels[node_id] = label
+    return labels
 
 
 def make_dir(dir_name):
