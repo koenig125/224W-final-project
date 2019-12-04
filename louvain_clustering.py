@@ -24,18 +24,19 @@ def louvain_clustering(graph):
 def main():
     graph = utils.load_graph()
     position = utils.get_positions(graph)
+    utils.make_dir('images/louvain')
 
     true_communities = utils.get_labels(graph, list(graph.nodes))
-    utils.plot_communities(graph, position, true_communities, labels=True, title='Butterfly Similarity Network - True Communities', path='images/communities_true.png')
+    utils.plot_communities(graph, position, true_communities, labels=True, title='Butterfly Similarity Network - True Communities', path='images/louvain/communities_true.png')
 
     communities = utils.group_communities(louvain_clustering(graph))
-    utils.plot_communities(graph, position, communities, labels=False, title='Butterfly Similarity Network - Louvain Communities', path='images/communities_louvain.png')
+    utils.plot_communities(graph, position, communities, labels=False, title='Butterfly Similarity Network - Louvain Communities', path='images/louvain/communities_louvain.png')
 
     graph_nodes = sorted(list(graph.nodes))
     predictions = utils.predict_majority_class(graph, communities)
     preds = [predictions[n] for n in graph_nodes]
     labels = [graph.nodes[n]['label'] for n in graph_nodes]
-    utils.report_classification_results(preds, labels, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'images/cm_louvain.png')
+    utils.report_classification_results(preds, labels, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'images/louvain/cm_louvain.png')
 
 
 if __name__=='__main__':
