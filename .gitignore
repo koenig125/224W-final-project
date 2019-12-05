@@ -120,3 +120,6 @@ venv.bak/
 
 # embeddings
 *embeddings/
+
+# npy files
+*.npy
