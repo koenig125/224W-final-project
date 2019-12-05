@@ -53,9 +53,9 @@ def load_graph():
 
 def load_splits(embeddings_path):
     """
-    Generate train/test splits for butterfly embedding data with standardization 
-    applied. The embeddings need to be generated prior by running node2vec as 
-    specified here: https://github.com/koenig125/224W-final-project.
+    Generate train/test splits for butterfly data embeddings. The embeddings 
+    need to be generated prior by running node2vec as specified here: 
+    https://github.com/koenig125/224W-final-project.
 
     return: 4-tuple holding the training embeddings, training labels, testing
     embeddings, and testing labels for the BIOSNAP butterfly similarity network.
