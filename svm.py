@@ -24,25 +24,10 @@ def parse_args():
 
 
 def main(args):
-    # Read in node embeddings and labels
     embedding_file_path = 'node2vec/embeddings/' + args.input
-    embeddings = utils.load_embeddings(embedding_file_path)
-    labels = utils.load_labels()
-    num_nodes = len(labels)
-
-    # Shuffle embeddings and labels
-    node_ids = list(range(num_nodes))
-    np.random.shuffle(node_ids)
-    X = np.array([embeddings[n] for n in node_ids])
-    y = np.array([labels[n] for n in node_ids])
-
-    # Split data into train/dev/test
-    test = int(num_nodes * .8)
-    X_train, y_train = X[:test], y[:test]
-    X_test, y_test = X[test:], y[test:]
-
-    # Train and evaluate SVC
-    svc = SVC(gamma='auto')
+    X_train, X_test, y_train, y_test = utils.load_splits(embedding_file_path)
+    X_train, X_test = utils.standardize_data(X_train, X_test)
+    svc = SVC(gamma='scale')
     svc.fit(X_train, y_train)
     predictions = svc.predict(X_test)
     utils.make_dir('images/svc')
