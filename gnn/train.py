@@ -2,6 +2,7 @@
 Trains a GNN on the BIOSNAP butterfly similarity dataset.
 """
 
+import torch
 from torch_geometric.data import DataLoader
 
 import evaluate
@@ -19,8 +20,11 @@ def train(data, args):
     return: DataLoader, trained model, and list of validation accuracies during training
     """
     num_classes = len(set(data.y))
-    loader = DataLoader([data], shuffle=True)
-    model = models.GNN(data.num_node_features, args.hidden_dim, num_classes, args)
+    print('CUDA availability:', torch.cuda.is_available())
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    loader = DataLoader([data.to(device)], shuffle=True)
+    model = models.GNN(data.num_node_features, args.hidden_dim, num_classes, args).to(device)
     scheduler, optimizer = gnn_utils.build_optimizer(args, model.parameters())
 
     validation_accuracies = []
@@ -37,7 +41,7 @@ def train(data, args):
             total_loss += loss.item()
         
         val_acc = evaluate.eval(loader, model, is_test=False)
-        if len(validation_accuracies) and val_acc > max(validation_accuracies):
+        if not len(validation_accuracies) or val_acc > max(validation_accuracies):
             # Save the model each time it achieves a new max val
             # accuracy. Previously saved models are overwritten.
             print('New max accuracy', val_acc, '- saving model...')

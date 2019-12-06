@@ -41,6 +41,7 @@ def hyperparameter_search(data, args):
             for n in args.num_layers:
                 for h in args.hidden_dim:
                     for d in args.dropout:
+                        print('Training model with params:', [e, m, n, h, d])
                         new_args = copy.deepcopy(args)
                         new_args.epochs = e
                         new_args.model_type = m
