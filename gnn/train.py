@@ -1,15 +1,12 @@
 """
-Trains and evaluates a GNN on the BIOSNAP butterfly similarity dataset.
+Trains a GNN on the BIOSNAP butterfly similarity dataset.
 """
 
-# pylint: disable=no-member
-# pylint: disable=not-callable
-
-import torch
 from torch_geometric.data import DataLoader
 
 import gnn_utils
 import models
+import evaluate
 
 
 def train(data, args):
@@ -37,29 +34,10 @@ def train(data, args):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        val_acc = evaluate(loader, model, is_test=False)
+        val_acc = evaluate.eval(loader, model, is_test=False)
         validation_accuracies.append(val_acc)
         if epoch % 10 == 0:
             print('val:', val_acc)
             print('loss:', total_loss)
     
     return loader, model, validation_accuracies
-
-
-def evaluate(loader, model, is_test=False):
-    """
-    Evaluate model performance on data object (graph) in loader.
-
-    :param - loader: torch_geometric DataLoader for BIOSNAP dataset
-    :param - model: trained GNN model ready for making predictions
-    :param - is_test: boolean indicating whether to evaluate on test or eval split
-    """
-    model.eval()
-    data = [data for data in loader][0]
-    mask = data.test_mask if is_test else data.val_mask
-    with torch.no_grad():
-        pred = model(data).max(dim=1)[1][mask]
-        label = data.y[mask]
-    correct = pred.eq(label).sum().item()
-    total = mask.sum().item()
-    return correct / total
