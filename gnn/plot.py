@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -9,6 +10,26 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
 
 validation_dir = 'gnn/validation/'
+
+
+def arg_parse():
+    """
+    Parses arguments that determine which files to plot.
+    """
+    parser = argparse.ArgumentParser(description='GNN arguments.')
+
+    parser.add_argument('--model_type', type=str,
+                        help='Type of GNN model.')
+    parser.add_argument('--epochs', type=int,
+                        help='Number of training epochs')
+    parser.add_argument('--num_layers', type=int,
+                        help='Number of graph conv layers')
+    parser.add_argument('--hidden_dim', type=int,
+                        help='Training hidden size')
+    parser.add_argument('--dropout', type=float,
+                        help='Dropout rate')
+
+    return parser.parse_args()
 
 
 def plot_validation_accuracies(filenames, plot_name):
@@ -38,23 +59,28 @@ def plot_validation_accuracies(filenames, plot_name):
     plt.savefig('images/gnn/' + plot_name)
 
 
-def main():
-    model_types = ['GCN', 'GraphSage', 'GAT']
-    epochs = ['400']
-    num_layers = ['2', '3', '4']
-    hidden_dim = ['32', '64', '128']
-    dropout = ['0.0', '0.1']
+def main(args):
+    params = []
+    if args.model_type is not None:
+        params.append(args.model_type)
+    if args.epochs is not None:
+        params.append('_' + str(args.epochs) + '_')
+    if args.num_layers is not None:
+        params.append('_' + str(args.num_layers) + '_')
+    if args.hidden_dim is not None:
+        params.append('_' + str(args.hidden_dim) + '_')
+    if args.dropout is not None:
+        params.append(str(args.dropout))
 
-    for m in model_types:
-        for e in epochs:
-            for n in num_layers:
-                filenames = []
-                for h in hidden_dim:
-                    for d in dropout:
-                        f = '_'.join([m, e, n, h, d]) + '.npy'
-                        filenames.append(f)
-                plot_validation_accuracies(filenames, 'm=' + m + '_n=' + n + '.png')
+    filenames = []
+    for f in os.listdir('gnn/validation/'):
+        if all(p in f for p in params):
+            filenames.append(f)
+    filenames.sort()
+    save_path = '_'.join(params) + '.png'
+    plot_validation_accuracies(filenames, save_path)
 
 
 if __name__ == "__main__":
-    main()
+    args = arg_parse()
+    main(args)
