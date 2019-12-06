@@ -13,14 +13,13 @@ models_dir = 'gnn/trained_models/'
 
 
 def arg_parse():
-    """
-    Parses arguments for which model to load and evaluation set to use.
-    """
     parser = argparse.ArgumentParser(description='GNN arguments.')
+
     parser.add_argument('--model', type=str, required=True,
                         help='Filename of pytorch model to load.')
     parser.add_argument('--test', type=bool, default=False,
                         help='Evaluate on test split.')
+                        
     return parser.parse_args()
 
 

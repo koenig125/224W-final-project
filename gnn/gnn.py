@@ -19,9 +19,6 @@ import utils
 
 
 def arg_parse():
-    """
-    Parses the arguments for the GNN architecture and training.
-    """
     parser = argparse.ArgumentParser(description='GNN arguments.')
     gnn_utils.parse_optimizer(parser)
 
@@ -64,10 +61,10 @@ def save_info(args, model, validation_accuracies):
 
 def hyperparameter_search(data, args):
     model_types = ['GCN', 'GraphSage', 'GAT']
-    epochs = [500]
+    epochs = [400]
     num_layers = [2, 3, 4]
     hidden_dim = [32, 64, 128]
-    dropout = [0.0, 0.1, 0.2]
+    dropout = [0.0, 0.1]
     for e in epochs:
         for m in model_types:
             for n in num_layers:

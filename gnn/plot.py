@@ -1,3 +1,7 @@
+"""
+Plots validation accuracies recorded during training.
+"""
+
 import argparse
 import os
 import sys
@@ -13,9 +17,6 @@ validation_dir = 'gnn/validation/'
 
 
 def arg_parse():
-    """
-    Parses arguments that determine which files to plot.
-    """
     parser = argparse.ArgumentParser(description='GNN arguments.')
 
     parser.add_argument('--model_type', type=str,
