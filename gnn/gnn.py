@@ -1,6 +1,6 @@
 """
-Walks through the steps of loading data, training the model, reporting results,
-and saving learning and model information for the graph nueral network.
+Walks through the steps of loading data, training a model, reporting results,
+and saving learning and model information for a single graph nueral network.
 """
 
 import argparse
@@ -22,25 +22,22 @@ def arg_parse():
     parser = argparse.ArgumentParser(description='GNN arguments.')
     gnn_utils.parse_optimizer(parser)
 
-    parser.add_argument('--model_type', type=str,
+    parser.add_argument('-m', '--model_type', type=str,
                         help='Type of GNN model.')
-    parser.add_argument('--epochs', type=int,
+    parser.add_argument('-e', '--epochs', type=int,
                         help='Number of training epochs')
-    parser.add_argument('--num_layers', type=int,
+    parser.add_argument('-nl', '--num_layers', type=int,
                         help='Number of graph conv layers')
-    parser.add_argument('--hidden_dim', type=int,
+    parser.add_argument('-hd', '--hidden_dim', type=int,
                         help='Training hidden size')
-    parser.add_argument('--dropout', type=float,
+    parser.add_argument('-d', '--dropout', type=float,
                         help='Dropout rate')
-    parser.add_argument('--hyperparameter_search', type=bool,
-                        help='Explore hyperparameter space')
 
     parser.set_defaults(model_type='GCN',
                         epochs=400,
                         num_layers=2,
                         hidden_dim=32,
                         dropout=0.0,
-                        hyperparameter_search=False,
                         opt='adam',
                         opt_scheduler='none',
                         weight_decay=0.0,
@@ -59,35 +56,17 @@ def save_info(args, model, validation_accuracies):
     torch.save(model, 'gnn/trained_models/' + file_name + '.pt')
 
 
-def hyperparameter_search(data, args):
-    model_types = ['GCN', 'GraphSage', 'GAT']
-    epochs = [400]
-    num_layers = [2, 3, 4]
-    hidden_dim = [32, 64, 128]
-    dropout = [0.0, 0.1]
-    for e in epochs:
-        for m in model_types:
-            for n in num_layers:
-                for h in hidden_dim:
-                    for d in dropout:
-                        args.epochs = e
-                        args.model_type = m
-                        args.num_layers = n
-                        args.hidden_dim = h
-                        args.dropout = d
-                        print(args)
-                        loader, model, validation_accuracies = train.train(data, args)
-                        save_info(args, model, validation_accuracies)
-
-
-def main(args):
-    data_tg = data.load_data()
-    if args.hyperparameter_search:
-        hyperparameter_search(data_tg, args)
-    loader, model, validation_accuracies = train.train(data_tg, args)
+def train_and_save_gnn(data, args):
+    loader, model, validation_accuracies = train.train(data, args)
     save_info(args, model, validation_accuracies)
+    return model
+
+
+def main():
+    args = arg_parse()
+    data_tg = data.load_data()
+    train_and_save_gnn(data_tg, args)
 
 
 if __name__ == '__main__':
-    args = arg_parse()
-    main(args)
+    main()

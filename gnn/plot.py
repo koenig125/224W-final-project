@@ -19,15 +19,15 @@ validation_dir = 'gnn/validation/'
 def arg_parse():
     parser = argparse.ArgumentParser(description='GNN arguments.')
 
-    parser.add_argument('--model_type', type=str,
+    parser.add_argument('-m', '--model_type', type=str,
                         help='Type of GNN model.')
-    parser.add_argument('--epochs', type=int,
+    parser.add_argument('-e', '--epochs', type=int,
                         help='Number of training epochs')
-    parser.add_argument('--num_layers', type=int,
+    parser.add_argument('-nl', '--num_layers', type=int,
                         help='Number of graph conv layers')
-    parser.add_argument('--hidden_dim', type=int,
+    parser.add_argument('-hd', '--hidden_dim', type=int,
                         help='Training hidden size')
-    parser.add_argument('--dropout', type=float,
+    parser.add_argument('-d', '--dropout', type=float,
                         help='Dropout rate')
 
     return parser.parse_args()
