@@ -1,5 +1,4 @@
 import torch.optim as optim
-import os
 
 
 def parse_optimizer(parser):

@@ -1,4 +1,9 @@
+# pylint: disable=no-member
+# pylint: disable=not-callable
+
 import argparse
+import os
+import sys
 import time
 
 import networkx as nx
@@ -6,13 +11,13 @@ import numpy as np
 import torch
 import torch.optim as optim
 import torch_geometric.nn as pyg_nn
-from torch_geometric.data import DataLoader
+from torch_geometric.data import Data, DataLoader
 from torch_geometric.datasets import Planetoid, TUDataset
+from torch_geometric.utils import from_networkx
 
-import models
 import gnn_utils
+import models
 
-import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
 
@@ -49,9 +54,43 @@ def arg_parse():
     return parser.parse_args()
 
 
-def train(dataset, args):
-    test_loader = loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
-    model = models.GNNStack(dataset.num_node_features, args.hidden_dim, dataset.num_classes, args)
+def load_labels(graph):
+    node_ids = list(range(len(graph.nodes)))
+    return np.array([graph.nodes[n]['label'] for n in node_ids])
+
+
+def load_edges(graph):
+    edge_attr = []
+    edge_index = [[],[]]
+    edges = graph.edges.data('weight')
+    for n1, n2, weight in edges:
+        edge_index[0].extend([n1, n2])
+        edge_index[1].extend([n2, n1])
+        edge_attr.append([weight])
+        edge_attr.append([weight])
+    return np.array(edge_index), np.array(edge_attr)
+
+
+def load_masks(data):
+    num_nodes = len(data.y)
+    nids = utils.shuffle_ids(list(range(num_nodes)))
+
+    val_threshold = int(num_nodes * .6)
+    test_threshold = int(num_nodes * .8)
+
+    train_ids = nids[:val_threshold]
+    val_ids = nids[val_threshold:test_threshold]
+    test_ids = nids[test_threshold:]
+
+    data.train_mask = torch.tensor([1 if i in train_ids else 0 for i in range(num_nodes)], dtype=torch.bool)
+    data.val_mask = torch.tensor([1 if i in val_ids else 0 for i in range(num_nodes)], dtype=torch.bool)
+    data.test_mask = torch.tensor([1 if i in test_ids else 0 for i in range(num_nodes)], dtype=torch.bool)
+
+
+def train(data, args):
+    loader = DataLoader([data], batch_size=args.batch_size, shuffle=True)
+    num_classes = len(set(data.y))
+    model = models.GNNStack(data.num_node_features, args.hidden_dim, num_classes, args)
     scheduler, opt = gnn_utils.build_optimizer(args, model.parameters())
 
     validation_accuracies = []
@@ -79,7 +118,7 @@ def train(dataset, args):
     np.save('gnn/val_accuracies/' + args.model_type, validation_accuracies)
 
 
-def test(loader, model, is_validation=False):
+def test(loader, model, is_validation=True):
     model.eval()
 
     correct = 0
@@ -100,8 +139,18 @@ def test(loader, model, is_validation=False):
 
 def main():
     args = arg_parse()
-    dataset = Planetoid(root='/tmp/Cora', name='Cora')
-    train(dataset, args) 
+    graph = utils.load_graph()
+
+    x = torch.tensor(np.eye(len(graph.nodes)), dtype=torch.float)
+    y = torch.tensor(load_labels(graph), dtype=torch.long)
+
+    edge_index, edge_attr = load_edges(graph)
+    edge_index = torch.tensor(edge_index, dtype=torch.long)
+    edge_attr = torch.tensor(edge_attr, dtype=torch.float)
+
+    data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
+    load_masks(data)
+    train(data, args)
 
 
 if __name__ == '__main__':
