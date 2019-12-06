@@ -1,19 +1,21 @@
+"""
+Initializes the BIOSNAP butterfly similarity network in a data format
+compatible with pytorch geometric. Then trains and evaluates a graph 
+nueral network on the dataset, reporting learning behavior and results.
+"""
+
 # pylint: disable=no-member
 # pylint: disable=not-callable
 
 import argparse
 import os
 import sys
-import time
 
 import networkx as nx
 import numpy as np
 import torch
-import torch.optim as optim
 import torch_geometric.nn as pyg_nn
 from torch_geometric.data import Data, DataLoader
-from torch_geometric.datasets import Planetoid, TUDataset
-from torch_geometric.utils import from_networkx
 
 import gnn_utils
 import models
@@ -23,15 +25,18 @@ import utils
 
 
 def arg_parse():
+    """
+    Parses the arguments for the GNN architecture and training.
+    """
     parser = argparse.ArgumentParser(description='GNN arguments.')
     gnn_utils.parse_optimizer(parser)
 
     parser.add_argument('--model_type', type=str,
                         help='Type of GNN model.')
-    parser.add_argument('--batch_size', type=int,
-                        help='Training batch size')
     parser.add_argument('--epochs', type=int,
                         help='Number of training epochs')
+    parser.add_argument('--batch_size', type=int,
+                        help='Training batch size')
     parser.add_argument('--num_layers', type=int,
                         help='Number of graph conv layers')
     parser.add_argument('--hidden_dim', type=int,
@@ -40,12 +45,11 @@ def arg_parse():
                         help='Dropout rate')
 
     parser.set_defaults(model_type='GCN',
-                        batch_size=32,
-                        epochs=50,
+                        epochs=400,
+                        batch_size=1,
                         num_layers=2,
                         hidden_dim=32,
                         dropout=0.0,
-                        dataset='cora',
                         opt='adam',
                         opt_scheduler='none',
                         weight_decay=0.0,
@@ -54,33 +58,66 @@ def arg_parse():
     return parser.parse_args()
 
 
-def load_labels(graph):
+def get_labels(graph):
+    """
+    Retrieve the labels for all nodes in the graph provided.
+
+    :param - graph: nx.Graph object representing the butterfly similarity network
+    return: numpy array of labels, where index i gives the label for node with id i
+    """
     node_ids = list(range(len(graph.nodes)))
     return np.array([graph.nodes[n]['label'] for n in node_ids])
 
 
-def load_edges(graph):
-    edge_attr = []
+def get_edges(graph):
+    """
+    Retrive edges and their weights from the graph provided.
+
+    :param - graph: nx.Graph object representing the butterfly similarity network
+    return: 2-tuple of torch tensors in the form (edge_index, edge_attr), where
+    edge_index and edge_attr fulfill the specifications for the torch geometric
+    'Data' object (https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html)
+    """
+    # Will have shape [2, 2 * num_edges] where row 1 represents source nodes and 
+    # row 2 represents target nodes. There are 2 * num_edges because the edges are 
+    # required in directed format but our graph is undirected, so we must count 
+    # each edge twice, once for source --> target and once for target --> source. 
     edge_index = [[],[]]
+
+    # Will have shape [num_edges, 1] and holds weights for each edge represented in edge_index.
+    edge_attr = []
+    
     edges = graph.edges.data('weight')
     for n1, n2, weight in edges:
         edge_index[0].extend([n1, n2])
+        edge_attr.append([weight])
         edge_index[1].extend([n2, n1])
         edge_attr.append([weight])
-        edge_attr.append([weight])
-    return np.array(edge_index), np.array(edge_attr)
+    
+    # Convert to tensors as expected by torch geometric data object
+    edge_index = torch.tensor(np.array(edge_index), dtype=torch.long)
+    edge_attr = torch.tensor(np.array(edge_attr), dtype=torch.float)
+    return edge_index, edge_attr
 
 
-def load_masks(data):
+def get_masks(data):
+    """
+    Generate train, validation, and test masks and store them in the data object given.
+
+    :param - data: torch_geometric Data object holding node features, edges, and labels
+    """
     num_nodes = len(data.y)
     nids = utils.shuffle_ids(list(range(num_nodes)))
 
-    val_threshold = int(num_nodes * .6)
-    test_threshold = int(num_nodes * .8)
+    # It is CRITICAL that test split specified below remains in unison with the
+    # test split specified for the SVM models in svm.py in order to enable 
+    # valid comparison of prediction results across the SVM and GNN models.
+    val = int(num_nodes * .7)
+    test = int(num_nodes * .8)
 
-    train_ids = nids[:val_threshold]
-    val_ids = nids[val_threshold:test_threshold]
-    test_ids = nids[test_threshold:]
+    train_ids = nids[:val]
+    val_ids = nids[val:test]
+    test_ids = nids[test:]
 
     data.train_mask = torch.tensor([1 if i in train_ids else 0 for i in range(num_nodes)], dtype=torch.bool)
     data.val_mask = torch.tensor([1 if i in val_ids else 0 for i in range(num_nodes)], dtype=torch.bool)
@@ -88,70 +125,80 @@ def load_masks(data):
 
 
 def train(data, args):
-    loader = DataLoader([data], batch_size=args.batch_size, shuffle=True)
+    """
+    Train the model specified by tge parameters in args on the dataset given by data.
+
+    :param - data: torch_geometric Data object holding node features, edges, and labels
+    :param - args: user-specified arguments detailing GNN architecture and training
+    return: DataLoader, trained model, and list of validation accuracies during training
+    """
     num_classes = len(set(data.y))
-    model = models.GNNStack(data.num_node_features, args.hidden_dim, num_classes, args)
-    scheduler, opt = gnn_utils.build_optimizer(args, model.parameters())
+    loader = DataLoader([data], batch_size=args.batch_size, shuffle=True)
+    model = models.GNN(data.num_node_features, args.hidden_dim, num_classes, args)
+    scheduler, optimizer = gnn_utils.build_optimizer(args, model.parameters())
 
     validation_accuracies = []
     for epoch in range(args.epochs):
         total_loss = 0
         model.train()
         for batch in loader:
-            opt.zero_grad()
-            pred = model(batch)
-            label = batch.y
-            pred = pred[batch.train_mask]
-            label = label[batch.train_mask]
+            optimizer.zero_grad()
+            pred = model(batch)[batch.train_mask]
+            label = batch.y[batch.train_mask]
             loss = model.loss(pred, label)
             loss.backward()
-            opt.step()
-            total_loss += loss.item() * batch.num_graphs
-        total_loss /= len(loader.dataset)
-        print(total_loss)
-        validation_accuracies.append(test(loader, model, is_validation=True))
-
+            optimizer.step()
+            total_loss += loss.item()
+        val_acc = evaluate(loader, model, is_test=False)
+        validation_accuracies.append(val_acc)
         if epoch % 10 == 0:
-            test_acc = test(loader, model)
-            print(test_acc, '  test')
+            print('val:', val_acc)
+            print('loss:', total_loss)
+    
+    return loader, model, validation_accuracies
+
+
+def evaluate(loader, model, is_test=False):
+    """
+    Evaluate model performance on data object (graph) in loader.
+
+    :param - loader: torch_geometric DataLoader for BIOSNAP dataset
+    :param - model: trained GNN model ready for making predictions
+    :param - is_test: boolean indicating to evaluate on test or eval split
+    """
+    model.eval()
+    data = [data for data in loader][0]
+    mask = data.test_mask if is_test else data.val_mask
+    with torch.no_grad():
+        pred = model(data).max(dim=1)[1][mask]
+        label = data.y[mask]
+    correct = pred.eq(label).sum().item()
+    total = mask.sum().item()
+    return correct / total
+
+
+def main(args):
+    # Load graph.
+    graph = utils.load_graph()
+
+    # Extract graph info to create torch geometric data object.
+    x = torch.tensor(np.eye(len(graph.nodes)), dtype=torch.float)
+    y = torch.tensor(get_labels(graph), dtype=torch.long)
+    edge_index, edge_attr = get_edges(graph)
+    data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
+
+    # Obtain train/val/test splits.
+    get_masks(data)
+
+    # Train model.
+    loader, model, validation_accuracies = train(data, args)
+    print('Best accuracy:', max(validation_accuracies))
+
+    # Save validation accuracies from learning.
     utils.make_dir('gnn/val_accuracies')
     np.save('gnn/val_accuracies/' + args.model_type, validation_accuracies)
 
 
-def test(loader, model, is_validation=True):
-    model.eval()
-
-    correct = 0
-    for data in loader:
-        with torch.no_grad():
-            pred = model(data).max(dim=1)[1]
-            label = data.y
-        mask = data.val_mask if is_validation else data.test_mask
-        pred = pred[mask]
-        label = data.y[mask]
-        correct += pred.eq(label).sum().item()
-    
-    total = 0
-    for data in loader.dataset:
-        total += torch.sum(data.val_mask if is_validation else data.test_mask).item()
-    return correct / total
-
-
-def main():
-    args = arg_parse()
-    graph = utils.load_graph()
-
-    x = torch.tensor(np.eye(len(graph.nodes)), dtype=torch.float)
-    y = torch.tensor(load_labels(graph), dtype=torch.long)
-
-    edge_index, edge_attr = load_edges(graph)
-    edge_index = torch.tensor(edge_index, dtype=torch.long)
-    edge_attr = torch.tensor(edge_attr, dtype=torch.float)
-
-    data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
-    load_masks(data)
-    train(data, args)
-
-
 if __name__ == '__main__':
-    main()
+    args = arg_parse()
+    main(args)

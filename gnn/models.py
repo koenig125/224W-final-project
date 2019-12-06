@@ -5,9 +5,9 @@ import torch_geometric.nn as pyg_nn
 import torch_geometric.utils as pyg_utils
 
 
-class GNNStack(torch.nn.Module):
+class GNN(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, args):
-        super(GNNStack, self).__init__()
+        super(GNN, self).__init__()
 
         self.convs = nn.ModuleList()
         conv_model = self.build_conv_model(args.model_type)

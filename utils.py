@@ -53,45 +53,17 @@ def load_graph():
 
 def shuffle_ids(node_ids):
     """
-    Generate a random permutation of node ids.
+    Generate a random permutation of node ids for the purpose of generating
+    a train/test split of the data. Random seed is set to 0 for consistency
+    during model development and to provide for replication of results.
 
+    :param - node_ids: list of node ids from graph
     return: list of node ids in randomly permuted order
     """
     np.random.seed(0)
     nids = node_ids.copy()
     np.random.shuffle(nids)
     return nids
-
-
-def load_embeddings(path):
-    """
-    Load node2vec embeddings.
-
-    return: dictionary mapping node ids to their embeddings.
-    """
-    embeddings = {}
-    with open(path) as fp:  
-        for i, line in enumerate(fp):
-            node_id, emb_str = line.split(" ", 1)
-            emb = np.fromstring(emb_str, sep=' ')
-            if i != 0: # skip first line of file
-                embeddings[int(node_id)] = emb
-    return embeddings
-
-
-def load_labels():
-    """
-    Load butterfly similarity network labels.
-
-    return: dictionary mapping node ids to labels (1-10)
-    """
-    labels = {}
-    for line in nodefile:
-        if line[0] == '#': continue # skip comments
-        node_id, label = line[:-1].split('\t')
-        node_id, label = int(node_id), int(label)
-        labels[node_id] = label
-    return labels
 
 
 def make_dir(dir_name):

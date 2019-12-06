@@ -1,7 +1,14 @@
+"""
+Utilities to help pass arguments for and parse the desired optimizer for GNN model.
+"""
+
 import torch.optim as optim
 
 
 def parse_optimizer(parser):
+    """
+    Add optimizer parser options.
+    """
     opt_parser = parser.add_argument_group()
     opt_parser.add_argument('--opt', dest='opt', type=str,
             help='Type of optimizer')
@@ -22,6 +29,9 @@ def parse_optimizer(parser):
 
 
 def build_optimizer(args, params):
+    """
+    Construct optimizer from user parameters.
+    """
     weight_decay = args.weight_decay
     filter_fn = filter(lambda p : p.requires_grad, params)
     if args.opt == 'adam':

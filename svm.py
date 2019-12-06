@@ -25,6 +25,37 @@ def parse_args():
     return parser.parse_args()
 
 
+def load_embeddings(path):
+    """
+    Load node2vec embeddings.
+
+    return: dictionary mapping node ids to their embeddings.
+    """
+    embeddings = {}
+    with open(path) as fp:  
+        for i, line in enumerate(fp):
+            node_id, emb_str = line.split(" ", 1)
+            emb = np.fromstring(emb_str, sep=' ')
+            if i != 0: # skip first line of file
+                embeddings[int(node_id)] = emb
+    return embeddings
+
+
+def load_labels():
+    """
+    Load butterfly similarity network labels.
+
+    return: dictionary mapping node ids to labels (1-10)
+    """
+    labels = {}
+    for line in utils.nodefile:
+        if line[0] == '#': continue # skip comments
+        node_id, label = line[:-1].split('\t')
+        node_id, label = int(node_id), int(label)
+        labels[node_id] = label
+    return labels
+
+
 def load_splits(embeddings_path):
     """
     Generate train/test splits for the butterfly embeddings. Embeddings 
@@ -34,14 +65,17 @@ def load_splits(embeddings_path):
     return: 4-tuple holding the training embeddings, training labels, testing
     embeddings, and testing labels for the BIOSNAP butterfly similarity network.
     """
-    labels = utils.load_labels()
-    embeddings = utils.load_embeddings(embeddings_path)
+    labels = load_labels()
+    embeddings = load_embeddings(embeddings_path)
     num_nodes = len(labels)
 
     nids = utils.shuffle_ids(list(range(num_nodes)))
     X = np.array([embeddings[n] for n in nids])
     y = np.array([labels[n] for n in nids])
 
+    # It is CRITICAL that test split specified below remains in unison with the
+    # test split specified for the GNN models in train.py in order to enable 
+    # valid comparison of prediction results across the SVM and GNN models.
     test = int(num_nodes * .8)
     X_train, y_train = X[:test], y[:test]
     X_test, y_test = X[test:], y[test:]
