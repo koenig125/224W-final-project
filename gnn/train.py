@@ -4,9 +4,10 @@ Trains a GNN on the BIOSNAP butterfly similarity dataset.
 
 from torch_geometric.data import DataLoader
 
+import evaluate
+import gnn
 import gnn_utils
 import models
-import evaluate
 
 
 def train(data, args):
@@ -34,7 +35,13 @@ def train(data, args):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+        
         val_acc = evaluate.eval(loader, model, is_test=False)
+        if len(validation_accuracies) and val_acc > max(validation_accuracies):
+            # Save the model each time it achieves a new max val
+            # accuracy. Previously saved models are overwritten.
+            print('New max accuracy', val_acc, '- saving model...')
+            gnn.save_model(args, model)
         validation_accuracies.append(val_acc)
         if epoch % 10 == 0:
             print('val:', val_acc)

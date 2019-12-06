@@ -35,7 +35,7 @@ class GNN(torch.nn.Module):
 
 
     def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x, edge_index = data.x, data.edge_index
 
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)

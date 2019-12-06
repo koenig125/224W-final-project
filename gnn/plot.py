@@ -10,10 +10,10 @@ import numpy as np
 from matplotlib import cm
 from matplotlib import pyplot as plt
 
+import gnn_utils
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
-
-validation_dir = 'gnn/validation/'
 
 
 def arg_parse():
@@ -36,7 +36,7 @@ def arg_parse():
 def plot_validation_accuracies(filenames, plot_name):
     validation_accuracies = []
     for f in filenames:
-        v = np.load(validation_dir + f)
+        v = np.load(gnn_utils.validation_dir + f)
         validation_accuracies.append(v)
     
     epochs = [len(v) for v in validation_accuracies]
@@ -74,7 +74,7 @@ def main(args):
         params.append(str(args.dropout))
 
     filenames = []
-    for f in os.listdir('gnn/validation/'):
+    for f in os.listdir(gnn_utils.validation_dir):
         if all(p in f for p in params):
             filenames.append(f)
     filenames.sort()

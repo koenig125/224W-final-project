@@ -8,8 +8,7 @@ import torch
 from torch_geometric.data import DataLoader
 
 import data
-
-models_dir = 'gnn/trained_models/'
+import gnn_utils
 
 
 def arg_parse():
@@ -43,7 +42,7 @@ def eval(loader, model, is_test=False):
 
 
 def main(args):
-    f = models_dir + args.model
+    f = gnn_utils.models_dir + args.model
     model = torch.load(f)
     data_tg = data.load_data()
     loader = DataLoader([data_tg], shuffle=True)

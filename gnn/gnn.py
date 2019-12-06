@@ -11,8 +11,9 @@ import numpy as np
 import torch
 
 import data
-import train
+import evaluate
 import gnn_utils
+import train
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
@@ -46,19 +47,22 @@ def arg_parse():
     return parser.parse_args()
 
 
-def save_info(args, model, validation_accuracies):
+def save_model(args, model):
     file_name = '_'.join([args.model_type, str(args.epochs), str(args.num_layers), str(args.hidden_dim), str(args.dropout)])
+    utils.make_dir(gnn_utils.models_dir)
+    torch.save(model, gnn_utils.models_dir + file_name + '.pt')
 
-    utils.make_dir('gnn/validation')
-    np.save('gnn/validation/' + file_name + '.npy', validation_accuracies)
 
-    utils.make_dir('gnn/trained_models')
-    torch.save(model, 'gnn/trained_models/' + file_name + '.pt')
+def save_accuracies(args, validation_accuracies):
+    file_name = '_'.join([args.model_type, str(args.epochs), str(args.num_layers), str(args.hidden_dim), str(args.dropout)])
+    utils.make_dir(gnn_utils.validation_dir)
+    np.save(gnn_utils.validation_dir + file_name + '.npy', validation_accuracies)
 
 
 def train_and_save_gnn(data, args):
+    # Model is saved during training, so no need to save again here
     loader, model, validation_accuracies = train.train(data, args)
-    save_info(args, model, validation_accuracies)
+    save_accuracies(args, validation_accuracies)
     return model
 
 
