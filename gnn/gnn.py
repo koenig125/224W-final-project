@@ -35,12 +35,15 @@ def arg_parse():
                         help='Training hidden size')
     parser.add_argument('--dropout', type=float,
                         help='Dropout rate')
+    parser.add_argument('--hyperparameter_search', type=bool,
+                        help='Explore hyperparameter space')
 
     parser.set_defaults(model_type='GCN',
                         epochs=400,
                         num_layers=2,
                         hidden_dim=32,
                         dropout=0.0,
+                        hyperparameter_search=False,
                         opt='adam',
                         opt_scheduler='none',
                         weight_decay=0.0,
@@ -59,8 +62,31 @@ def save_info(args, model, validation_accuracies):
     torch.save(model, 'gnn/trained_models/' + file_name + '.pt')
 
 
+def hyperparameter_search(data, args):
+    model_types = ['GCN', 'GraphSage', 'GAT']
+    epochs = [500]
+    num_layers = [2, 3, 4]
+    hidden_dim = [32, 64, 128]
+    dropout = [0.0, 0.1, 0.2]
+    for e in epochs:
+        for m in model_types:
+            for n in num_layers:
+                for h in hidden_dim:
+                    for d in dropout:
+                        args.epochs = e
+                        args.model_type = m
+                        args.num_layers = n
+                        args.hidden_dim = h
+                        args.dropout = d
+                        print(args)
+                        loader, model, validation_accuracies = train.train(data, args)
+                        save_info(args, model, validation_accuracies)
+
+
 def main(args):
     data_tg = data.load_data()
+    if args.hyperparameter_search:
+        hyperparameter_search(data_tg, args)
     loader, model, validation_accuracies = train.train(data_tg, args)
     save_info(args, model, validation_accuracies)
 
