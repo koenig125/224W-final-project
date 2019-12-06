@@ -51,30 +51,16 @@ def load_graph():
     return G
 
 
-def load_splits(embeddings_path):
+def shuffle_ids(node_ids):
     """
-    Generate train/test splits for butterfly data embeddings. The embeddings 
-    need to be generated prior by running node2vec as specified here: 
-    https://github.com/koenig125/224W-final-project.
+    Generate a random permutation of node ids.
 
-    return: 4-tuple holding the training embeddings, training labels, testing
-    embeddings, and testing labels for the BIOSNAP butterfly similarity network.
+    return: list of node ids in randomly permuted order
     """
-    labels = load_labels()
-    embeddings = load_embeddings(embeddings_path)
-    return sklearn.model_selection.train_test_split(
-        embeddings, labels, test_size=0.4, random_state=224)
-
-
-def standardize_data(X_train, X_test):
-    """
-    Standardizes X_train to zero mean and unit variance, then applies the 
-    transformation that was executed on X_train to X_test.
-    """
-    scaler = sklearn.preprocessing.StandardScaler().fit(X_train)
-    X_train_transformed = scaler.transform(X_train)
-    X_test_transformed = scaler.transform(X_test)
-    return X_train_transformed, X_test_transformed
+    np.random.seed(0)
+    nids = node_ids.copy()
+    np.random.shuffle(nids)
+    return nids
 
 
 def load_embeddings(path):
