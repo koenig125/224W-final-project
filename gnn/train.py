@@ -8,7 +8,6 @@ Trains and evaluates a GNN on the BIOSNAP butterfly similarity dataset.
 import torch
 from torch_geometric.data import DataLoader
 
-import data
 import gnn_utils
 import models
 
@@ -22,7 +21,7 @@ def train(data, args):
     return: DataLoader, trained model, and list of validation accuracies during training
     """
     num_classes = len(set(data.y))
-    loader = DataLoader([data], batch_size=args.batch_size, shuffle=True)
+    loader = DataLoader([data], shuffle=True)
     model = models.GNN(data.num_node_features, args.hidden_dim, num_classes, args)
     scheduler, optimizer = gnn_utils.build_optimizer(args, model.parameters())
 

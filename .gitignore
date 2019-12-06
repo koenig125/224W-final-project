@@ -123,3 +123,6 @@ venv.bak/
 
 # npy files
 *.npy
+
+# pytorch models
+*.pt

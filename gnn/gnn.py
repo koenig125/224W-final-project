@@ -8,6 +8,7 @@ import os
 import sys
 
 import numpy as np
+import torch
 
 import data
 import train
@@ -28,8 +29,6 @@ def arg_parse():
                         help='Type of GNN model.')
     parser.add_argument('--epochs', type=int,
                         help='Number of training epochs')
-    parser.add_argument('--batch_size', type=int,
-                        help='Training batch size')
     parser.add_argument('--num_layers', type=int,
                         help='Number of graph conv layers')
     parser.add_argument('--hidden_dim', type=int,
@@ -39,7 +38,6 @@ def arg_parse():
 
     parser.set_defaults(model_type='GCN',
                         epochs=400,
-                        batch_size=1,
                         num_layers=2,
                         hidden_dim=32,
                         dropout=0.0,
@@ -51,15 +49,20 @@ def arg_parse():
     return parser.parse_args()
 
 
+def save_info(args, model, validation_accuracies):
+    file_name = '_'.join([args.model_type, str(args.epochs), str(args.num_layers), str(args.hidden_dim), str(args.dropout)])
+
+    utils.make_dir('gnn/validation')
+    np.save('gnn/validation/' + file_name + '.npy', validation_accuracies)
+
+    utils.make_dir('gnn/trained_models')
+    torch.save(model, 'gnn/trained_models/' + file_name + '.pt')
+
+
 def main(args):
-    # Load data and train model.
     data_tg = data.load_data()
     loader, model, validation_accuracies = train.train(data_tg, args)
-    print('Best accuracy:', max(validation_accuracies))
-
-    # Save validation accuracies.
-    utils.make_dir('gnn/val_accuracies')
-    np.save('gnn/val_accuracies/' + args.model_type, validation_accuracies)
+    save_info(args, model, validation_accuracies)
 
 
 if __name__ == '__main__':
