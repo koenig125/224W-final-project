@@ -25,7 +25,7 @@ def get_labels(graph):
     return: numpy array of labels, where index i gives the label for node with id i
     """
     node_ids = list(range(len(graph.nodes)))
-    return np.array([graph.nodes[n]['label'] for n in node_ids])
+    return np.array([graph.nodes[n]['label'] - 1 for n in node_ids])
 
 
 def get_edges(graph):

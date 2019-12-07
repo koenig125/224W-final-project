@@ -19,7 +19,7 @@ def train(data, args):
     :param - args: user-specified arguments detailing GNN architecture and training
     return: DataLoader, trained model, and list of validation accuracies during training
     """
-    num_classes = len(set(data.y))
+    num_classes = len(set([int(x) for x in data.y]))
     print('CUDA availability:', torch.cuda.is_available())
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
