@@ -36,7 +36,8 @@ def main():
     predictions = utils.predict_majority_class(graph, communities)
     preds = [predictions[n] for n in graph_nodes]
     labels = [graph.nodes[n]['label'] for n in graph_nodes]
-    utils.report_classification_results(preds, labels, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'images/louvain/cm_louvain.png')
+    utils.accuracy(preds, labels)
+    utils.confusion_matrix(preds, labels, 'Confusion Matrix - Majority Label Predictions from Louvain Communities', 'images/louvain/cm_louvain.png')
 
 
 if __name__=='__main__':

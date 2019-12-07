@@ -106,7 +106,8 @@ def main(args):
     # Report results.
     utils.make_dir('images/svc')
     cm_path = 'images/svc/cm_' + args.input[:-4] + '.png'
-    utils.report_classification_results(predictions, y_test, 'Confusion Matrix - SVC', cm_path)
+    utils.accuracy(predictions, y_test)
+    utils.confusion_matrix(predictions, y_test, 'Confusion Matrix - SVC', cm_path)
 
 
 if __name__=='__main__':

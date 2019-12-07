@@ -211,14 +211,23 @@ def get_labels(graph, nodes):
     return labels
 
 
-def report_classification_results(predictions, labels, cm_title, cm_path):
+def confusion_matrix(predictions, labels, title, path):
     """
-    Calculate classification accuracy and confusion matrix given predictions and labels.
+    Calculate confusion matrix given predictions and labels.
+
+    :param - predictions: list for which index i holds the prediction for node i
+    :param - labels: list for which index i holds ground truth label for node i
+    """
+    confusion_matrix = sklearn.metrics.confusion_matrix(labels, predictions)
+    plot_heatmap(confusion_matrix, title, path, 'Predicted Label', 'True Label')
+
+
+def accuracy(predictions, labels):
+    """
+    Calculate classification accuracy given predictions and labels.
 
     :param - predictions: list for which index i holds the prediction for node i
     :param - labels: list for which index i holds ground truth label for node i
     """
     accuracy = sklearn.metrics.accuracy_score(labels, predictions)
     print('Accuracy: {0:.5f}'.format(accuracy))
-    confusion_matrix = sklearn.metrics.confusion_matrix(labels, predictions)
-    plot_heatmap(confusion_matrix, cm_title, cm_path, 'Predicted Label', 'True Label')
