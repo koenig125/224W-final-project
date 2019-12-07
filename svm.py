@@ -32,7 +32,8 @@ def load_labels():
     return: dictionary mapping node ids to labels (1-10)
     """
     labels = {}
-    for line in utils.nodefile:
+    nf = open(utils.nodefile, 'r')
+    for line in nf:
         if line[0] == '#': continue # skip comments
         node_id, label = line[:-1].split('\t')
         node_id, label = int(node_id), int(label)

@@ -29,8 +29,8 @@ labels_to_species = {
 # represent butterflies (organisms) and edges represent visual 
 # similarities between the organisms. Additional information here: 
 # https://snap.stanford.edu/biodata/datasets/10029/10029-SS-Butterfly.html
-edgefile = open('data/SS-Butterfly_weights.tsv', 'rb')
-nodefile = open('data/SS-Butterfly_labels.tsv', 'r')
+edgefile = 'data/SS-Butterfly_weights.tsv'
+nodefile = 'data/SS-Butterfly_labels.tsv'
 
 
 def load_graph():
@@ -40,10 +40,12 @@ def load_graph():
     return: nx.Graph object representing the butterfly similarity network
     """
     # Create graph from weighted edge list.
-    G = nx.read_weighted_edgelist(edgefile, '#', '\t', nx.Graph(), nodetype=int)
+    ef = open(edgefile, 'rb')
+    G = nx.read_weighted_edgelist(ef, '#', '\t', nx.Graph(), nodetype=int)
 
     # Add class labels as node attributes.
-    for line in nodefile:
+    nf = open(nodefile, 'r')
+    for line in nf:
         if line[0] == '#': continue # skip comments
         node_id, label = line[:-1].split('\t')
         node_id, label = int(node_id), int(label)
