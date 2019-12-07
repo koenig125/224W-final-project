@@ -20,7 +20,7 @@ def arg_parse():
                         help='File with node2vec embeddings.')
     parser.add_argument('-m', '--model', type=str, required=True,
                         help='Filename of pytorch model to load.')
-    parser.add_argument('-t', '--test', type=bool, default=False,
+    parser.add_argument('-t', '--test', default=False, action="store_true",
                         help='Evaluate on test split.')
                         
     return parser.parse_args()
@@ -45,13 +45,17 @@ def eval(loader, model, is_test=False):
     return correct / total
 
 
-def main(args):
-    f = gnn_utils.models_dir + args.model
+def eval_saved_model(filename, node_features, embedding_file, is_test):
+    f = gnn_utils.models_dir + filename
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = torch.load(f, map_location=torch.device(device))
-    data_tg = data.load_data(args.node_features, args.embedding_file)
+    data_tg = data.load_data(node_features, embedding_file)
     loader = DataLoader([data_tg.to(device)], shuffle=True)
-    print(eval(loader, model, is_test=args.test))
+    print(eval(loader, model, is_test))
+
+
+def main(args):
+    eval_saved_model(args.model, args.node_features, args.embedding_file, args.test)
 
 
 if __name__ == '__main__':
