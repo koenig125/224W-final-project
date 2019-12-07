@@ -15,14 +15,13 @@ class GNN(torch.nn.Module):
         assert (args.num_layers >= 1), 'Number of layers is not >=1'
         for l in range(args.num_layers-1):
             self.convs.append(conv_model(hidden_dim, hidden_dim))
+        
+        self.dropout_layer = nn.Dropout(args.dropout)
 
         self.post_mp = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim), 
             nn.Dropout(args.dropout), 
             nn.Linear(hidden_dim, output_dim))
-
-        self.dropout = args.dropout
-        self.num_layers = args.num_layers
 
 
     def build_conv_model(self, model_type):
@@ -37,10 +36,10 @@ class GNN(torch.nn.Module):
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
 
-        for i in range(self.num_layers):
+        for i in range(len(self.convs)):
             x = self.convs[i](x, edge_index)
             x = nn.ReLU()(x)
-            x = nn.Dropout(self.dropout)(x)
+            x = self.dropout_layer(x)
 
         x = self.post_mp(x)
 
