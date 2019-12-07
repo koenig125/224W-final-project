@@ -4,6 +4,7 @@ Utilities to help pass arguments for and parse the desired optimizer for GNN mod
 
 import torch.optim as optim
 
+images_dir = 'images/gnn/'
 models_dir = 'gnn/trained_models/'
 validation_dir = 'gnn/validation/'
 

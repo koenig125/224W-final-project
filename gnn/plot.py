@@ -60,8 +60,8 @@ def plot_validation_accuracies(filenames, plot_name):
     plt.ylabel('Validation Accuracy')
     plt.xlabel('Epoch')
     plt.legend()
-    utils.make_dir('images/gnn')
-    plt.savefig('images/gnn/' + plot_name)
+    utils.make_dir(gnn_utils.images_dir)
+    plt.savefig(gnn_utils.images_dir + plot_name)
 
 
 def main(args):
