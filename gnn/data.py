@@ -8,6 +8,7 @@ Reference: https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html.
 import os
 import sys
 
+import networkx as nx
 import numpy as np
 import torch
 from torch_geometric.data import Data
@@ -80,15 +81,26 @@ def get_masks(data):
     data.test_mask = torch.tensor([1 if i in test_ids else 0 for i in range(num_nodes)], dtype=torch.bool)
 
 
-def load_data():
+def load_data(feature_type='identity', embedding_file=None):
     # Load graph.
     graph = utils.load_graph()
+    node_ids = list(range(len(graph.nodes)))
+
+    # Choose node features from identity, adjacency matrix, or embeddings.
+    if feature_type == 'identity':
+        node_features = np.eye(len(graph.nodes))
+    elif feature_type == 'adjacency':
+        node_features = nx.to_numpy_matrix(graph, node_ids)
+    elif feature_type == 'embedding':
+        embedding_path = 'node2vec/embeddings/' + embedding_file
+        embeddings = utils.load_embeddings(embedding_path)
+        node_features = np.array([embeddings[nid] for nid in node_ids])
 
     # Extract graph info to create torch geometric data object.
-    x = torch.tensor(np.eye(len(graph.nodes)), dtype=torch.float)
+    x = torch.tensor(node_features, dtype=torch.float)
     y = torch.tensor(get_labels(graph), dtype=torch.long)
     edge_index, edge_attr = get_edges(graph)
-    data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
+    data = Data(x=x, edge_index=edge_index, y=y)
 
     # Obtain train/val/test splits.
     get_masks(data)

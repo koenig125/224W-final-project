@@ -14,6 +14,10 @@ import gnn_utils
 def arg_parse():
     parser = argparse.ArgumentParser(description='GNN arguments.')
 
+    parser.add_argument('-nf', '--node_features', type=str, required=True,
+                        help='Type of node features.')
+    parser.add_argument('-ef', '--embedding_file', type=str, default=None,
+                        help='File with node2vec embeddings.')
     parser.add_argument('-m', '--model', type=str, required=True,
                         help='Filename of pytorch model to load.')
     parser.add_argument('-t', '--test', type=bool, default=False,
@@ -43,8 +47,8 @@ def eval(loader, model, is_test=False):
 
 def main(args):
     f = gnn_utils.models_dir + args.model
-    model = torch.load(f)
-    data_tg = data.load_data()
+    model = torch.load(f, map_location=torch.device('cpu'))
+    data_tg = data.load_data(args.node_features, args.embedding_file)
     loader = DataLoader([data_tg], shuffle=True)
     print(eval(loader, model, is_test=args.test))
 

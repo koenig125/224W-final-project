@@ -19,6 +19,10 @@ import utils
 def arg_parse():
     parser = argparse.ArgumentParser(description='GNN arguments.')
 
+    parser.add_argument('-nf', '--node_features', type=str,
+                        help='Type of node features.')
+    parser.add_argument('-ef', '--embedding_file', type=str,
+                        help='File with node2vec embeddings.')
     parser.add_argument('-m', '--model_type', type=str,
                         help='Type of GNN model.')
     parser.add_argument('-e', '--epochs', type=int,
@@ -62,6 +66,10 @@ def plot_validation_accuracies(filenames, plot_name):
 
 def main(args):
     params = []
+    if args.node_features is not None:
+        params.append(args.node_features[:3])
+    if args.node_features == 'embedding' and args.embedding_file is not None:
+        params.append(args.embedding_file[4:-4])
     if args.model_type is not None:
         params.append(args.model_type)
     if args.epochs is not None:
@@ -77,6 +85,7 @@ def main(args):
     for f in os.listdir(gnn_utils.validation_dir):
         if all(p in f for p in params):
             filenames.append(f)
+    assert len(filenames) > 0, 'No files matching parameters found'
     filenames.sort()
     save_path = '_'.join(params) + '.png'
     plot_validation_accuracies(filenames, save_path)

@@ -51,6 +51,22 @@ def load_graph():
     return G
 
 
+def load_embeddings(path):
+    """
+    Load node2vec embeddings.
+
+    return: dictionary mapping node ids to their embeddings.
+    """
+    embeddings = {}
+    with open(path) as fp:  
+        for i, line in enumerate(fp):
+            node_id, emb_str = line.split(" ", 1)
+            emb = np.fromstring(emb_str, sep=' ')
+            if i != 0: # skip first line of file
+                embeddings[int(node_id)] = emb
+    return embeddings
+
+
 def shuffle_ids(node_ids):
     """
     Generate a random permutation of node ids for the purpose of generating

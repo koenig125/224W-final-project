@@ -16,6 +16,10 @@ def arg_parse():
     parser = argparse.ArgumentParser(description='GNN arguments.')
     gnn_utils.parse_optimizer(parser)
 
+    parser.add_argument('-nf', '--node_features', nargs='+', type=str, required=True,
+                        help='Types of node features.')
+    parser.add_argument('-ef', '--embedding_file', type=str, default=None,
+                        help='File with node2vec embeddings.')
     parser.add_argument('-m', '--model_type', nargs='+', type=str, required=True,
                         help='Types of GNN models.')
     parser.add_argument('-e', '--epochs', nargs='+', type=int, required=True,
@@ -36,19 +40,23 @@ def arg_parse():
 
 
 def hyperparameter_search(data, args):
-    for e in args.epochs:
-        for m in args.model_type:
-            for n in args.num_layers:
-                for h in args.hidden_dim:
-                    for d in args.dropout:
-                        print('Training model with params:', [e, m, n, h, d])
-                        new_args = copy.deepcopy(args)
-                        new_args.epochs = e
-                        new_args.model_type = m
-                        new_args.num_layers = n
-                        new_args.hidden_dim = h
-                        new_args.dropout = d
-                        train_and_save_gnn(data, new_args)
+    for f in args.node_features:
+        for e in args.epochs:
+            for m in args.model_type:
+                for n in args.num_layers:
+                    for h in args.hidden_dim:
+                        for d in args.dropout:
+                            ef = args.embedding_file
+                            print('Training model with params:', [f, ef, e, m, n, h, d])
+                            new_args = copy.deepcopy(args)
+                            new_args.node_features = f
+                            new_args.embedding_file = ef
+                            new_args.epochs = e
+                            new_args.model_type = m
+                            new_args.num_layers = n
+                            new_args.hidden_dim = h
+                            new_args.dropout = d
+                            train_and_save_gnn(data, new_args)
 
 
 def main(args):

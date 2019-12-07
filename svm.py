@@ -25,22 +25,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_embeddings(path):
-    """
-    Load node2vec embeddings.
-
-    return: dictionary mapping node ids to their embeddings.
-    """
-    embeddings = {}
-    with open(path) as fp:  
-        for i, line in enumerate(fp):
-            node_id, emb_str = line.split(" ", 1)
-            emb = np.fromstring(emb_str, sep=' ')
-            if i != 0: # skip first line of file
-                embeddings[int(node_id)] = emb
-    return embeddings
-
-
 def load_labels():
     """
     Load butterfly similarity network labels.
@@ -66,7 +50,7 @@ def load_splits(embeddings_path):
     embeddings, and testing labels for the BIOSNAP butterfly similarity network.
     """
     labels = load_labels()
-    embeddings = load_embeddings(embeddings_path)
+    embeddings = utils.load_embeddings(embeddings_path)
     num_nodes = len(labels)
 
     nids = utils.shuffle_ids(list(range(num_nodes)))
