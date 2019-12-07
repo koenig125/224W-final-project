@@ -47,9 +47,10 @@ def eval(loader, model, is_test=False):
 
 def main(args):
     f = gnn_utils.models_dir + args.model
-    model = torch.load(f, map_location=torch.device('cpu'))
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = torch.load(f, map_location=torch.device(device))
     data_tg = data.load_data(args.node_features, args.embedding_file)
-    loader = DataLoader([data_tg], shuffle=True)
+    loader = DataLoader([data_tg.to(device)], shuffle=True)
     print(eval(loader, model, is_test=args.test))
 
 
