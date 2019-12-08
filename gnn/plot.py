@@ -59,7 +59,7 @@ def plot_validation_accuracies(filenames, plot_name):
     plt.title('Validation Accuracy vs. Epochs for Node Classification')
     plt.ylabel('Validation Accuracy')
     plt.xlabel('Epoch')
-    plt.legend()
+    plt.legend(fontsize = 'x-small')
     utils.make_dir(gnn_utils.images_dir)
     plt.savefig(gnn_utils.images_dir + plot_name)
 

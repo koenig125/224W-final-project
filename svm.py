@@ -47,8 +47,8 @@ def load_splits(embeddings_path):
     need to be generated prior by running node2vec as specified here: 
     https://github.com/koenig125/224W-final-project.
 
-    return: 4-tuple holding the training embeddings, training labels, testing
-    embeddings, and testing labels for the BIOSNAP butterfly similarity network.
+    return: 4-tuple holding the training data, training labels, testing
+    data, and testing labels for the BIOSNAP butterfly similarity network.
     """
     labels = load_labels()
     embeddings = utils.load_embeddings(embeddings_path)
@@ -101,6 +101,7 @@ def main(args):
 
     # Train classifier and make predictions.
     optimal_svc = hyperparameter_search(SVC(), X_train, y_train)
+    print('Optimal parameters:', optimal_svc.best_params_)
     predictions = optimal_svc.predict(X_test)
 
     # Report results.

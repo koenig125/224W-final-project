@@ -52,7 +52,7 @@ def eval(loader, model, is_test=False, confusion_matrix=False, filename=None):
         utils.make_dir(gnn_utils.images_dir)
         title = 'Confusion Matrix - GNN'
         path = gnn_utils.images_dir + 'cm_' + filename + '.png'
-        utils.confusion_matrix(pred, label, title, path)
+        utils.confusion_matrix(pred.to('cpu'), label.to('cpu'), title, path)
     
     correct = pred.eq(label).sum().item()
     total = mask.sum().item()
