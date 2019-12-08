@@ -101,6 +101,7 @@ def main(args):
 
     # Train classifier and make predictions.
     optimal_svc = hyperparameter_search(SVC(), X_train, y_train)
+    print('Cross Validation Accuracy:', optimal_svc.best_score_)
     print('Optimal parameters:', optimal_svc.best_params_)
     predictions = optimal_svc.predict(X_test)
 
