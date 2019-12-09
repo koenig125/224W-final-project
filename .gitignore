@@ -114,15 +114,3 @@ venv.bak/
 
 # vscode
 *.vscode
-
-# images
-*.png
-
-# embeddings
-*embeddings/
-
-# npy files
-*.npy
-
-# pytorch models
-*.pt
